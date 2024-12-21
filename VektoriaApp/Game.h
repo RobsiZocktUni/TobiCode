@@ -74,7 +74,7 @@ public:
 
 private:
 	
-	 
+	
 	CRoot m_zr; 
 	CFrame m_zF;
 	CViewport m_zV;
@@ -124,6 +124,7 @@ private:
 	COverlay m_oMulti;
 	COverlays m_oButtons;
 	bool m_bGamemode=false;
+	bool bgameplay = false;
 	CAudio m_zMusic;
 
 	// Importer für Obj
@@ -140,6 +141,20 @@ private:
 	CHVector m_avBulletLastPos[30];
 	CAudio m_azaGun[30];
 
+	//Splitscreen
+	CViewport m_zVL;
+	CViewport m_zVR;
+	CCamera m_zCamL;
+	CCamera m_zCamR;
+	CPlacement m_zPCam2;
+
+	//bullet logic Deathstar
+	CPlacement m_zPDeathBullet;
+	CGeoCylinder m_zgDeathBullet;
+	//CMaterial m_zBullet; player bullet material will be used
+	CPlacements m_zPDeathBullets;
+	CHVector m_avDeathBulletLastPos[30];
+	CAudio m_azaDeathGun[30];
 };
 
 

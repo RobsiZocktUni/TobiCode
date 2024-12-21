@@ -1,11 +1,13 @@
 #include "Game.h"
-#include "iostream"
+#include <iostream>
 #include "Rockets.h"
+#include <chrono>
+#include <random>
 
 
-
-
-
+auto main_seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+std::mt19937 gen(main_seed);
+std::uniform_int_distribution<int> distribution(1, 2);
 
 CGame::CGame(void)
 {
@@ -27,10 +29,16 @@ void CGame::Init(HWND hwnd, void(*procOS)(HWND hwnd, unsigned int uWndFlags), CS
 	// damit die Engine freigeschaltet wird:
 	m_zr.Init(psplash, false, false, true);
 	m_zC.Init(QUARTERPI);
+	m_zCamL.Init(QUARTERPI);
+	m_zCamR.Init(QUARTERPI);
 	m_zF.Init(hwnd, procOS);
 	m_zF.AddDeviceKeyboard(&m_zdKey);
 	m_zF.AddDeviceCursor(&m_zdCurs);
 	m_zV.InitFull(&m_zC);
+	m_zVL.InitHalfLeft(&m_zCamL);
+	m_zVR.InitHalfRight(&m_zCamR);
+	m_zVR.SwitchOff();
+	m_zVL.SwitchOff();
 	m_zL.Init(CHVector(-1.0f, -1.0f, -1.0f), CColor(1.0f, 1.0f, 1.0f));
 	m_zgSphereEarth.Init(20.F, &m_zMEarth, 50, 50);
 	m_zgSphereSky.Init(1000000.0F, &m_zMSky, 50, 50);
@@ -42,14 +50,19 @@ void CGame::Init(HWND hwnd, void(*procOS)(HWND hwnd, unsigned int uWndFlags), CS
 	// Hier kommen alle weiteren Initialisierungen hinein: 
 	m_zr.AddFrame(&m_zF);
 	m_zF.AddViewport(&m_zV);
+	m_zF.AddViewport(&m_zVR);
+	m_zF.AddViewport(&m_zVL);
 	m_zr.AddScene(&m_zS);
 	m_zS.AddPlacement(&m_zPCam);
+	m_zS.AddPlacement(&m_zPCam2);
 	m_zS.AddPlacement(&m_zPlacementSun);
 	m_zPlacementSun.AddPlacement(&m_zPlaccementemms);
 	m_zPlaccementemms.AddPlacement(&m_zPSphareEarth);
 	m_zS.AddPlacement(&m_zPlacementSky);
 	m_zS.AddLightParallel(&m_zL);
 	m_zPCam.AddCamera(&m_zC);
+	m_zPCam.AddCamera(&m_zCamL);
+	m_zPCam2.AddCamera(&m_zCamR);
 	m_zPSphareEarth.AddGeo(&m_zgSphereEarth);
 	m_zPlacementSky.AddGeo(&m_zgSphereSky);
 	m_zMEarth.MakeTextureDiffuse("textures\\earth_image.jpg");
@@ -65,7 +78,7 @@ void CGame::Init(HWND hwnd, void(*procOS)(HWND hwnd, unsigned int uWndFlags), CS
 	m_zMMoon.MakeTextureDiffuse("textures\\moon_image.jpg");
 	m_zPlacementSun.AddGeo(&m_zgSphereSun);
 
-	m_zPlacementSun.AddPlacement(&m_zPlacementDeath);
+	m_zPlaccementemms.AddPlacement(&m_zPlacementDeath);
 	m_zPlacementDeath.AddGeo(&m_zgShpereDeath);
 	std::cout << "pre gen" << std::endl;	
 	CGame::GenRockets();
@@ -154,6 +167,25 @@ void CGame::Init(HWND hwnd, void(*procOS)(HWND hwnd, unsigned int uWndFlags), CS
 		m_azaGun[i].Init("textures//Gun.wav");
 	}
 
+
+	//deathstar bullets
+	m_zgDeathBullet.SetAxis(eAxisZ);
+	m_zgDeathBullet.Init(0.5, 1.0f, &m_zBullet);
+	m_zPDeathBullet.AddGeo(&m_zgDeathBullet);
+	m_zPDeathBullet.SetPhysics(2.0f, 0.1f, 0.0f, 2000000.0f, true);
+	m_zPDeathBullet.SwitchOff();
+	m_zS.AddPlacement(&m_zPDeathBullet);
+
+	m_zPDeathBullets.RingMake(30, m_zPDeathBullet);
+	m_zS.AddPlacements(m_zPDeathBullets);
+
+	for (int i = 0; i < 30; i++) {
+		m_zS.AddAudio(&m_azaDeathGun[i]);
+		m_azaDeathGun[i].Init("textures//Gun.wav");
+	}
+
+
+
 	m_oLclick.SetLayer(0.f);
 	m_oRclick.SetLayer(0.f);
 	m_oSingle.SetLayer(0.6f);
@@ -220,13 +252,22 @@ void CGame::Tick(float fTime, float fTimeDelta)
 			m_oSingle.SwitchOff();
 			m_oMulti.SwitchOff();
 			m_oStart.SwitchOff();
+			m_zV.SwitchOn();
+			m_zVL.SwitchOff();
+			m_zVR.SwitchOff();
 			m_bGamemode = false;
+			bgameplay = true;
 		}
 		else if (m_zdCurs.PickOverlayPreselected(m_oButtons) == &m_oMulti) {
 			m_oSingle.SwitchOff();
 			m_oMulti.SwitchOff();
 			m_oStart.SwitchOff();
+			
+			m_zVL.SwitchOn();
+			m_zVR.SwitchOn();
+			m_zV.SwitchOff();
 			m_bGamemode = true;
+			bgameplay = true;
 		}
 	}
 
@@ -242,8 +283,31 @@ void CGame::Tick(float fTime, float fTimeDelta)
 	m_zPlacementMoon.RotateYDelta(fTime * 0.5);
 	m_zPlaccementemms.RotateYDelta(fTime);
 
-	m_zPlacementDeath.TranslateX(7.f);
+	m_zPlacementDeath.TranslateX(26.f);
 	m_zPlacementDeath.RotateYDelta(fTime);
+	if(bgameplay)
+	{
+		if (m_zPDeathBullets.RingIsNotFull()) {
+			CPlacement* pzp = m_zPDeathBullets.RingInc();
+			pzp->SetMat(m_zPlacementDeath.GetMatGlobal());
+			
+			CHVector vDeathaim = m_zpSpaceship.GetPosGlobal() - m_zPlacementDeath.GetPosGlobal();
+			if(m_bGamemode)
+				if(distribution(gen)==2)
+					CHVector vDeathaim = m_zpSpaceship.GetPosGlobal() - m_zPlacementDeath.GetPosGlobal(); //TODO change to second spaceship
+			vDeathaim.Normal();
+			pzp->SetPhysicsVelocity(vDeathaim * 70.f);
+			m_azaGun[m_zPBullets.m_uRingStart].Start();
+		}
+	}
+	CPlacement* pzPDeathOldestBullet = m_zPDeathBullets.RingAskLast();
+	if (pzPDeathOldestBullet) {
+		if ((pzPDeathOldestBullet->GetPosGlobal() - m_zPCam.GetPosGlobal()).Length() > 300.0f)
+			m_zPDeathBullets.RingDec();
+	}
+
+
+
 	CGame::DoRocketTick();
 	
 	if (m_zdCurs.ButtonDownLeft()) {
