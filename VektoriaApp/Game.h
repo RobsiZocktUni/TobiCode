@@ -155,6 +155,7 @@ private:
 	CPlacements m_zPDeathBullets;
 	CHVector m_avDeathBulletLastPos[30];
 	CAudio m_azaDeathGun[30];
+	CPlacement m_zpSpaceship2;
 };
 
 

@@ -143,13 +143,20 @@ void CGame::Init(HWND hwnd, void(*procOS)(HWND hwnd, unsigned int uWndFlags), CS
 
 	// Importiere Geometrie
 	m_triangleTable = m_fileObj.LoadGeoTriangleTable("textures//prometheus.obj");
-	m_zmSpaceship.MakeTextureDiffuse("textures//StartScreen.jpg");
+	m_zmSpaceship.MakeTextureDiffuse("textures//StartScreen.jpg"); //ähm, also wieso das mein startscreen is weis ich nicht mehr, aber warscheinlich fand ich es sehr lustig
 	m_triangleTable->SetMaterial(&m_zmSpaceship);
 	m_zPCam.AddPlacement(&m_zpSpaceship);
 	m_zpSpaceship.AddGeo(m_triangleTable);
 	
+	m_zPCam2.AddPlacement(&m_zpSpaceship2);
+	m_zpSpaceship2.AddGeo(m_triangleTable);
+
+
 	m_zpSpaceship.TranslateZDelta(-20);
 	m_zpSpaceship.TranslateYDelta(-2.5f);
+
+	m_zpSpaceship2.TranslateZDelta(-20);
+	m_zpSpaceship2.TranslateYDelta(-2.5f);
 
 	m_zBullet.LoadPreset("MetalRustyFlaking");
 	m_zgBullet.SetAxis(eAxisZ);
@@ -294,7 +301,7 @@ void CGame::Tick(float fTime, float fTimeDelta)
 			CHVector vDeathaim = m_zpSpaceship.GetPosGlobal() - m_zPlacementDeath.GetPosGlobal();
 			if(m_bGamemode)
 				if(distribution(gen)==2)
-					CHVector vDeathaim = m_zpSpaceship.GetPosGlobal() - m_zPlacementDeath.GetPosGlobal(); //TODO change to second spaceship
+					CHVector vDeathaim = m_zpSpaceship2.GetPosGlobal() - m_zPlacementDeath.GetPosGlobal(); //TODO change to second spaceship
 			vDeathaim.Normal();
 			pzp->SetPhysicsVelocity(vDeathaim * 70.f);
 			m_azaGun[m_zPBullets.m_uRingStart].Start();
